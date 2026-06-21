@@ -1,0 +1,27 @@
+# Render Blueprint for the FIT College relay.
+# Deploy: push to GitHub, then in Render → New → Blueprint, point at this repo.
+# Render auto-injects PORT; server.js reads it. Set the `sync: false` secrets in
+# the dashboard after the first deploy (they are intentionally not stored here).
+services:
+  - type: web
+    name: fit-college-relay
+    runtime: node
+    plan: free
+    rootDir: relay          # build/start run here; ../widget.js is still in the checkout
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false          # set in dashboard (secret)
+      - key: HUBSPOT_TOKEN
+        sync: false          # set in dashboard (secret)
+      - key: ADMIN_RELOAD_TOKEN
+        sync: false          # set in dashboard (secret)
+      - key: ALLOWED_ORIGIN
+        value: https://www.fitcollege.edu.au   # lock to the live domain
+      - key: CHAT_MODEL
+        value: claude-haiku-4-5-20251001
+      - key: SUMMARY_MODEL
+        value: claude-haiku-4-5-20251001

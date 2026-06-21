@@ -10,7 +10,9 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "test": "node smoke-test.mjs"
+    "test": "node smoke-test.mjs",
+    "hubspot:properties": "node scripts/create-hubspot-properties.mjs",
+    "hubspot:test": "node scripts/test-hubspot.mjs"
   },
   "dependencies": {
     "cors": "^2.8.5",

@@ -56,6 +56,15 @@ async function run() {
   r = await req('GET', '/health');
   check('200 + {ok:true}', r.status === 200 && r.json?.ok === true, `got ${r.status} ${JSON.stringify(r.json)}`);
 
+  console.log('GET /widget.js');
+  {
+    const res = await fetch(`${BASE}/widget.js`);
+    const body = await res.text();
+    check('200 + JS content-type + widget body',
+      res.ok && /javascript/.test(res.headers.get('content-type') || '') && body.includes('fitc-launch'),
+      `got ${res.status} ${res.headers.get('content-type')}`);
+  }
+
   console.log('POST /chat — validation');
   r = await req('POST', '/chat', { body: { messages: [] } });
   check('empty messages → 400', r.status === 400, `got ${r.status}`);

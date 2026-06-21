@@ -97,3 +97,93 @@ curl -X POST http://localhost:3000/admin/reload-kb \
 entry requirements, RPL, refunds, FAQ). After editing it, either restart the
 server or call `POST /admin/reload-kb`. Never hardcode course facts in
 `server.js` or the prompts.
+
+## HubSpot setup
+
+The relay personalises the greeting from a contact (via the `hubspotutk`
+cookie) and, after each chat, writes structured `fitc_*` properties plus a
+timeline note back to that contact.
+
+### 1. Create a private app
+
+In HubSpot → Settings → Integrations → Private Apps, create an app and grant
+these scopes (the notes scope is easy to miss):
+
+- `crm.objects.contacts.read`
+- `crm.objects.contacts.write`
+- `crm.objects.notes.write` — **required for the timeline note**
+- `crm.schemas.contacts.read`
+- `crm.schemas.contacts.write` — only needed to run the property-creation script
+
+Copy the access token into `HUBSPOT_TOKEN`.
+
+### 2. Create the contact properties (scripted, not click-ops)
+
+`hubspot.js` holds the controlled vocabulary (`PROPERTY_DEFS`) shared by the
+runtime sync and the provisioning script, so the dropdown internal values can
+never drift from the summariser's enums.
+
+```bash
+HUBSPOT_TOKEN=pat-xxxx npm run hubspot:properties
+```
+
+Idempotent — re-running updates labels/options instead of duplicating. Creates
+a **FIT College Advisor** property group with:
+
+| Property                 | Type                 | Values |
+| ------------------------ | -------------------- | ------ |
+| `fitc_advisor_persona`   | dropdown             | starter, career_changer, returner, insider, unknown |
+| `fitc_intent_level`      | dropdown             | hot, warm, cool |
+| `fitc_primary_objection` | dropdown             | price, time_flexibility, eligibility_experience, recognition_credit, age, study_confidence, income_viability, none |
+| `fitc_booking_status`    | dropdown             | accepted, declined, offered_no_response, not_offered |
+| `fitc_course_interest`   | multiple checkboxes  | the course catalog (cert_iii_fitness, … , other) |
+| `fitc_kb_gaps`           | multi-line text      | free text |
+
+`syncToHubSpot` sanitises against this vocabulary before writing, so a stray
+value from the model is dropped rather than 400-ing the whole update.
+
+### 3. Test against a real contact
+
+```bash
+HUBSPOT_TOKEN=pat-xxxx TEST_CONTACT_ID=12345 \
+  [TEST_CONTACT_UTK=<hubspotutk>] npm run hubspot:test
+```
+
+Writes the `fitc_*` properties and one clearly-marked smoke-test note to that
+contact, then verifies the properties saved and the note is associated to the
+contact (Note→Contact, association type 202). Use a throwaway test contact.
+
+## Deploying the relay
+
+Configs for two hosts are included; both auto-inject `PORT`, which `server.js`
+reads.
+
+- **Render** — `render.yaml` (Blueprint). New → Blueprint → pick this repo. Set
+  the `sync: false` secrets (`ANTHROPIC_API_KEY`, `HUBSPOT_TOKEN`,
+  `ADMIN_RELOAD_TOKEN`) in the dashboard after the first deploy.
+- **Railway** — `railway.json`. Create a service from this repo and set the
+  service **Root Directory** to `relay`, then add the env vars in the
+  dashboard.
+
+Lock `ALLOWED_ORIGIN` to the live site (`https://www.fitcollege.edu.au`) so only
+that origin can call `/chat`.
+
+The widget is served from the relay itself at `GET /widget.js`, so it shares an
+origin with `/chat`.
+
+## Embedding on the thank-you page
+
+Add one tag just before `</body>` on `/promo-thanks` (via the CMS), pointing at
+your deployed relay:
+
+```html
+<script src="https://YOUR-RELAY-HOST/widget.js"
+        data-relay="https://YOUR-RELAY-HOST"
+        data-meeting="https://meetings.hubspot.com/your-rep"></script>
+```
+
+Then confirm the page's Content-Security-Policy (if any) allows the relay origin
+in `script-src` and `connect-src` (and `frame-src` for the HubSpot meetings
+iframe). Test the full loop: submit the form → land on the thank-you page →
+chat → book → check the contact in HubSpot picked up the `fitc_*` properties and
+the note.
