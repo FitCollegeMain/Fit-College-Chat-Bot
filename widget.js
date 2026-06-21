@@ -1,0 +1,268 @@
+/* FIT College Career Advisor — embeddable widget
+ * Single-file, no build step. Drop one <script> tag on /promo-thanks:
+ *
+ *   <script src="https://YOUR-HOST/widget.js"
+ *           data-relay="https://your-relay.onrender.com"
+ *           data-meeting="https://meetings.hubspot.com/your-rep"></script>
+ *
+ * Optional data-* attributes:
+ *   data-firstname="Sam"   personalise the greeting (or pass ?fn=Sam on the redirect)
+ *   data-autoopen="1500"   ms before the panel auto-opens once (default 1500; 0 = never)
+ *   data-demo="true"       preview the UI with canned replies, no relay needed
+ *
+ * Place the tag just before </body> (not async/defer).
+ */
+(function () {
+  'use strict';
+
+  // ---------- Config ----------
+  var thisScript = document.currentScript
+    || document.querySelector('script[data-relay]')
+    || (function () { var s = document.getElementsByTagName('script'); return s[s.length - 1]; })();
+  var d = (thisScript && thisScript.dataset) || {};
+
+  function qp(k) { try { return new URLSearchParams(location.search).get(k) || ''; } catch (e) { return ''; } }
+  function cookie(name) { var m = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)'); return m ? decodeURIComponent(m.pop()) : ''; }
+
+  var cfg = {
+    relay: (d.relay || '').replace(/\/$/, ''),
+    meeting: d.meeting || '',
+    firstName: d.firstname || qp('fn') || '',
+    email: d.email || qp('email') || '',
+    autoOpen: d.autoopen != null ? parseInt(d.autoopen, 10) : 1500,
+    demo: d.demo === 'true' || !d.relay
+  };
+  var utk = cookie('hubspotutk');
+
+  // ---------- State ----------
+  var messages = [];        // real turns only {role, content}; greeting is display-only
+  var isOpen = false, bookingShown = false, summarised = false, busy = false;
+
+  // ---------- Styles ----------
+  var css = ''
+    + '#fitc{position:fixed;bottom:20px;right:20px;z-index:2147483000;'
+    + 'font-family:Poppins,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}'
+    + '#fitc *,#fitc *::before,#fitc *::after{box-sizing:border-box;margin:0;padding:0}'
+    + '#fitc button{font-family:inherit;cursor:pointer;border:0;background:none}'
+
+    // launcher
+    + '#fitc-launch{display:flex;align-items:center;gap:10px;background:#CE2829;color:#fff;'
+    + 'padding:13px 20px 13px 16px;border-radius:30px;box-shadow:0 8px 24px rgba(0,0,0,.28);'
+    + 'font-weight:600;font-size:15px;letter-spacing:.2px;transition:transform .15s,background .15s}'
+    + '#fitc-launch:hover{background:#b0211f;transform:translateY(-2px)}'
+    + '#fitc-launch svg{width:20px;height:20px;display:block}'
+
+    // panel
+    + '#fitc-panel{position:fixed;bottom:20px;right:20px;width:380px;height:564px;max-height:calc(100vh - 40px);'
+    + 'background:#181818;border-radius:16px;overflow:hidden;display:none;flex-direction:column;'
+    + 'box-shadow:0 18px 50px rgba(0,0,0,.45);opacity:0;transform:translateY(12px);'
+    + 'transition:opacity .22s ease,transform .22s ease}'
+    + '#fitc-panel.open{display:flex;opacity:1;transform:translateY(0)}'
+
+    // header — the signature: black bar, uppercase collegiate wordmark, angled red accent
+    + '#fitc-head{position:relative;background:#181818;padding:18px 18px 20px;flex:none;overflow:hidden}'
+    + '#fitc-head::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;'
+    + 'background:#CE2829;transform:skewX(-24deg) translateX(-6px);transform-origin:left}'
+    + '#fitc-brand{font-weight:700;font-size:17px;letter-spacing:2.5px;color:#fff;line-height:1}'
+    + '#fitc-sub{margin-top:5px;font-size:12px;letter-spacing:.3px;color:#b5b5b5;font-weight:500}'
+    + '#fitc-close{position:absolute;top:14px;right:14px;width:30px;height:30px;border-radius:50%;'
+    + 'color:#b5b5b5;font-size:20px;line-height:1;display:flex;align-items:center;justify-content:center;'
+    + 'transition:background .15s,color .15s}'
+    + '#fitc-close:hover{background:rgba(255,255,255,.08);color:#fff}'
+
+    // messages
+    + '#fitc-msgs{flex:1;overflow-y:auto;padding:16px 16px 8px;display:flex;flex-direction:column;gap:10px}'
+    + '#fitc-msgs::-webkit-scrollbar{width:6px}'
+    + '#fitc-msgs::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:3px}'
+    + '.fitc-row{display:flex;animation:fitc-in .25s ease}'
+    + '.fitc-row.user{justify-content:flex-end}'
+    + '.fitc-bubble{max-width:84%;padding:11px 14px;border-radius:14px;font-size:14.5px;line-height:1.5;'
+    + 'color:#fff;white-space:pre-wrap;word-wrap:break-word}'
+    + '.fitc-row.bot .fitc-bubble{background:#2a2a2a;border-bottom-left-radius:4px}'
+    + '.fitc-row.user .fitc-bubble{background:#CE2829;border-bottom-right-radius:4px}'
+    + '@keyframes fitc-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}'
+
+    // typing
+    + '.fitc-typing{display:flex;gap:4px;padding:13px 14px;background:#2a2a2a;border-radius:14px;'
+    + 'border-bottom-left-radius:4px;width:fit-content}'
+    + '.fitc-typing span{width:7px;height:7px;border-radius:50%;background:#7a7a7a;animation:fitc-bounce 1.2s infinite}'
+    + '.fitc-typing span:nth-child(2){animation-delay:.18s}.fitc-typing span:nth-child(3){animation-delay:.36s}'
+    + '@keyframes fitc-bounce{0%,60%,100%{transform:translateY(0);opacity:.5}30%{transform:translateY(-5px);opacity:1}}'
+
+    // booking card
+    + '.fitc-book{background:#202020;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:16px;'
+    + 'animation:fitc-in .25s ease}'
+    + '.fitc-book h4{color:#fff;font-size:15px;font-weight:600;margin-bottom:6px}'
+    + '.fitc-book p{color:#b5b5b5;font-size:13px;line-height:1.5;margin-bottom:12px}'
+    + '.fitc-book iframe{width:100%;height:520px;border:0;border-radius:10px;background:#fff}'
+
+    // composer
+    + '#fitc-foot{flex:none;padding:12px;border-top:1px solid rgba(255,255,255,.07);display:flex;gap:8px;align-items:flex-end}'
+    + '#fitc-input{flex:1;resize:none;max-height:104px;background:#242424;color:#fff;border-radius:12px;'
+    + 'padding:11px 13px;font-size:14.5px;line-height:1.4;border:1px solid rgba(255,255,255,.06);outline:none}'
+    + '#fitc-input::placeholder{color:#7a7a7a}'
+    + '#fitc-input:focus{border-color:rgba(206,40,41,.6)}'
+    + '#fitc-send{flex:none;width:42px;height:42px;border-radius:12px;background:#CE2829;color:#fff;'
+    + 'display:flex;align-items:center;justify-content:center;transition:background .15s}'
+    + '#fitc-send:hover{background:#b0211f}#fitc-send:disabled{opacity:.45;cursor:default}'
+    + '#fitc-send svg{width:19px;height:19px}'
+
+    // focus visibility + reduced motion + mobile
+    + '#fitc :focus-visible{outline:2px solid #CE2829;outline-offset:2px}'
+    + '@media (prefers-reduced-motion:reduce){#fitc *{animation:none!important;transition:none!important}}'
+    + '@media (max-width:480px){#fitc-panel{width:100%;height:100%;max-height:100%;bottom:0;right:0;border-radius:0}'
+    + '#fitc-launch{bottom:16px}}';
+
+  // ---------- DOM ----------
+  var style = document.createElement('style'); style.textContent = css; document.head.appendChild(style);
+
+  var root = document.createElement('div'); root.id = 'fitc';
+  root.innerHTML = ''
+    + '<button id="fitc-launch" aria-label="Chat with a FIT College advisor">'
+    +   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-9 8.4 9 9 0 0 1-4-1L3 20l1.1-5A8.38 8.38 0 0 1 3 11.5 8.5 8.5 0 0 1 21 11.5z"/></svg>'
+    +   '<span>Chat to an advisor</span>'
+    + '</button>'
+    + '<div id="fitc-panel" role="dialog" aria-label="FIT College Career Advisor">'
+    +   '<div id="fitc-head">'
+    +     '<div id="fitc-brand">FIT COLLEGE</div><div id="fitc-sub">Career Advisor</div>'
+    +     '<button id="fitc-close" aria-label="Close chat">&times;</button>'
+    +   '</div>'
+    +   '<div id="fitc-msgs" aria-live="polite"></div>'
+    +   '<div id="fitc-foot">'
+    +     '<textarea id="fitc-input" rows="1" aria-label="Type your message" placeholder="Ask about courses, pricing, getting started\u2026"></textarea>'
+    +     '<button id="fitc-send" aria-label="Send message">'
+    +       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>'
+    +     '</button>'
+    +   '</div>'
+    + '</div>';
+  document.body.appendChild(root);
+
+  var elPanel = root.querySelector('#fitc-panel');
+  var elLaunch = root.querySelector('#fitc-launch');
+  var elClose = root.querySelector('#fitc-close');
+  var elMsgs = root.querySelector('#fitc-msgs');
+  var elInput = root.querySelector('#fitc-input');
+  var elSend = root.querySelector('#fitc-send');
+
+  // ---------- Rendering ----------
+  function scrollDown() { elMsgs.scrollTop = elMsgs.scrollHeight; }
+
+  function addBubble(role, text) {
+    var row = document.createElement('div');
+    row.className = 'fitc-row ' + (role === 'user' ? 'user' : 'bot');
+    var b = document.createElement('div'); b.className = 'fitc-bubble'; b.textContent = text;
+    row.appendChild(b); elMsgs.appendChild(row); scrollDown();
+  }
+
+  function showTyping() {
+    var row = document.createElement('div'); row.className = 'fitc-row bot'; row.id = 'fitc-typing-row';
+    row.innerHTML = '<div class="fitc-typing"><span></span><span></span><span></span></div>';
+    elMsgs.appendChild(row); scrollDown();
+  }
+  function hideTyping() { var t = document.getElementById('fitc-typing-row'); if (t) t.remove(); }
+
+  function showBooking() {
+    if (bookingShown) return; bookingShown = true;
+    var sep = cfg.meeting.indexOf('?') === -1 ? '?' : '&';
+    var url = cfg.meeting + sep + 'embed=true'
+      + (cfg.firstName ? '&firstName=' + encodeURIComponent(cfg.firstName) : '')
+      + (cfg.email ? '&email=' + encodeURIComponent(cfg.email) : '');
+    var card = document.createElement('div'); card.className = 'fitc-book';
+    card.innerHTML = '<h4>Ready to talk it through?</h4>'
+      + '<p>Book a quick call with an advisor \u2014 they\u2019ll cover pricing, payment plans and start dates.</p>'
+      + (cfg.meeting ? '<iframe title="Book a call with FIT College" src="' + url + '"></iframe>'
+                     : '<p style="color:#CE2829">Booking link not configured.</p>');
+    elMsgs.appendChild(card); scrollDown();
+  }
+
+  // ---------- Networking ----------
+  function reply(text, offerBooking) {
+    hideTyping(); busy = false; elSend.disabled = false;
+    messages.push({ role: 'assistant', content: text });
+    addBubble('assistant', text);
+    if (offerBooking) showBooking();
+  }
+
+  function send() {
+    var text = elInput.value.trim();
+    if (!text || busy) return;
+    busy = true; elSend.disabled = true;
+    elInput.value = ''; autosize();
+    messages.push({ role: 'user', content: text });
+    addBubble('user', text);
+    showTyping();
+
+    if (cfg.demo) { demoReply(); return; }
+
+    fetch(cfg.relay + '/chat', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ utk: utk, messages: messages })
+    })
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function (data) { reply(data.reply, data.offerBooking); })
+      .catch(function () {
+        hideTyping(); busy = false; elSend.disabled = false;
+        addBubble('assistant', 'I couldn\u2019t reach the advisor just then \u2014 mind trying that again?');
+      });
+  }
+
+  function summarise() {
+    if (summarised || cfg.demo) return;
+    if (!messages.some(function (m) { return m.role === 'user'; })) return;
+    summarised = true;
+    try {
+      var body = JSON.stringify({ utk: utk, messages: messages });
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon(cfg.relay + '/summarise', new Blob([body], { type: 'application/json' }));
+      } else {
+        fetch(cfg.relay + '/summarise', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body, keepalive: true });
+      }
+    } catch (e) { /* never block on this */ }
+  }
+
+  // ---------- Demo mode ----------
+  var demoLines = [
+    'Great question! Our Certificate III & IV in Fitness is the most popular path \u2014 it qualifies you to work as a personal trainer. Are you looking to start fresh, or are you already working in the industry?',
+    'That makes sense. It\u2019s self-paced online for the theory, with practical sessions you can fit around your schedule. What\u2019s most important to you \u2014 cost, flexibility, or how quickly you can finish?'
+  ];
+  function demoReply() {
+    var i = Math.min(messages.filter(function (m) { return m.role === 'assistant'; }).length, demoLines.length - 1);
+    setTimeout(function () {
+      var userTurns = messages.filter(function (m) { return m.role === 'user'; }).length;
+      reply(demoLines[i], userTurns >= 2);
+    }, 800);
+  }
+
+  // ---------- Open / close ----------
+  var greeting = 'Hi there' + (cfg.firstName ? ', ' + cfg.firstName : '')
+    + ' \u2014 thanks for reaching out to FIT College. While our team gets ready to call you, I can help right now. What\u2019s drawing you to a fitness career?';
+
+  function open() {
+    if (isOpen) return; isOpen = true;
+    elLaunch.style.display = 'none';
+    elPanel.classList.add('open');
+    if (!elMsgs.childNodes.length) addBubble('assistant', greeting);
+    setTimeout(function () { elInput.focus(); }, 250);
+  }
+  function close() {
+    if (!isOpen) return; isOpen = false;
+    elPanel.classList.remove('open');
+    elLaunch.style.display = 'flex';
+    summarise();
+  }
+
+  function autosize() { elInput.style.height = 'auto'; elInput.style.height = Math.min(elInput.scrollHeight, 104) + 'px'; }
+
+  // ---------- Events ----------
+  elLaunch.addEventListener('click', open);
+  elClose.addEventListener('click', close);
+  elSend.addEventListener('click', send);
+  elInput.addEventListener('input', autosize);
+  elInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && isOpen) close(); });
+  window.addEventListener('pagehide', summarise);
+
+  if (cfg.autoOpen > 0) setTimeout(open, cfg.autoOpen);
+})();
