@@ -81,11 +81,32 @@ Courses are delivered online and face-to-face at campuses across Australia.
 - **What's included (5 topics):** Strength & Conditioning; Sport Programs; Sport Integrity & Leadership; Sport Performance Coaching; First Aid.
 - **Career outcomes:** Sport coach (with a club or independently), mentor, and sports-development roles in clubs, academies and national governing bodies.
 
-### Other courses offered
-- **First Aid:** HLTAID009 Provide CPR (2 hours); HLTAID011 Provide First Aid (6 hours).
-- **TAE40122 Certificate IV in Training and Assessment**, plus an upgrade pathway from TAE40116 to TAE40122.
-- **CHCSS00098 / disability support** upskilling for health & disability support work.
-- **SIT30222 Certificate III in Travel.**
+### CHCSS00130 Individual Support — Disability Skill Set (NDIS)
+- **What it covers:** Person-centred support for people with disability, designed with the NDIS in mind. Four units: CHCDIS011 (strengths-based skill development), CHCDIS012 (community participation & social inclusion), CHCDIS020 (effective disability support practices), CHCCCS038 (empowerment & rights-based delivery).
+- **Study mode:** Online/virtual; enrol anytime, start within 72 hours.
+- **Duration:** ~6 months allowable (~285 nominal hours, ~12 hrs/week).
+- **Entry requirements:** Certificate III in Fitness (SIS30321) or equivalent; LLN Level 3; and current First Aid (HLTAID011), NDIS Worker Screening, Working with Children Check and National Police Check.
+- **Career outcomes:** Disability support work; FIT College partners with FITCare Support Services for job opportunities. (Industry hourly rates commonly ~$30–$35; outcomes vary.)
+
+### TAE40122 Certificate IV in Training and Assessment
+- **Study modes:** Online (12 months to complete) or on-campus workshops at the Maroochydore campus (15 days face-to-face, 9am–5pm; ~once a week).
+- **Duration:** Typically 9–12 months; on-campus pace can finish in ~14 weeks.
+- **Entry requirements:** Demonstrated vocational competency in your proposed training/assessment area; education to ~Year 10 level; moderate computer literacy. Online students must arrange people to role-play as learners for practical tasks.
+- **Units:** Covers the TAE40122 core and electives (e.g. TAEDES411/412, TAEDEL411/412/311, TAEASS412/413/512, TAELLN421/422, TAEPDD401, BSBCMM411).
+- **Career outcomes:** RTO/enterprise trainer, assessor, training adviser, VET teacher, workplace trainer, L&D officer.
+- **Also available:** an upgrade pathway from the superseded TAE40116 to TAE40122.
+
+### SIT30222 Certificate III in Travel
+- **Study mode:** 100% online.
+- **Duration:** ~8 months common completion (12 months allowable; ~624 nominal hours; ~10–20 hrs/week).
+- **Entry requirements:** No prerequisites; students must be 16 or older and meet LLN requirements.
+- **What's included (8 topics):** travel industry fundamentals, WHS, customer service, selling travel products, booking procedures, reservations (Amadeus GDS), domestic airfares, international airfare construction.
+- **Career outcomes:** Travel advisor, personal travel consultant, itinerary designer, luxury travel planner, or a home-based travel business via host-agency partnerships.
+
+### First Aid courses
+- **HLTAID009 Provide CPR** — 2-hour course; face-to-face at campuses nationwide or online.
+- **HLTAID011 Provide First Aid** — 6-hour course; face-to-face at campuses nationwide or online.
+- Enrol via phone (1300 887 017), email, or by requesting an info pack.
 
 ## Fees, payments & funding
 
@@ -114,7 +135,7 @@ Courses are delivered online and face-to-face at campuses across Australia.
 ## Recognition of Prior Learning (RPL) & Credit Transfer
 
 - **What it is:** An assessment-only pathway that formally recognises your existing skills, knowledge and workplace experience instead of teaching new material. It can recognise individual units, clusters of units, or a full qualification.
-- **Credit Transfer:** prior formal training and qualifications can be credited toward a new qualification.
+- **Credit Transfer (different from RPL):** an agreed, consistent credit for parts of a qualification based on equivalent units you've **already completed** at FIT College or another RTO (matched by content and learning outcomes). RPL, by contrast, assesses skills/experience you haven't been formally trained in. Credit transfer is straightforward where units match; RPL needs an evidence portfolio.
 - **Fees:**
   - **Current FIT College students:** RPL is **free** for the qualification you're already enrolled in.
   - **Non-current students:** **$995** for one qualification review; **$1,495** for two qualification reviews. Any remaining "gap" study is charged per unit, or you can exit with a Statement of Attainment.
@@ -129,6 +150,13 @@ Courses are delivered online and face-to-face at campuses across Australia.
 - **Partial refunds may apply** for: a verified terminal illness or permanent disability diagnosed after registration; FIT College being unable to deliver the course (student then has two weeks to request a refund or a free course transfer); or overpayments.
 - **Deferrals & suspensions:** deferrals must be submitted within the first 30 days before classes start; suspensions need 30 days' prior notice and aren't accepted in the final 30 days. Both are generally approved for up to three (3) months. An approved deferral/suspension does **not** automatically remove or change financial obligations.
 - **Payment obligation:** the biller/guardian remains liable for the total purchased course cost regardless of completion.
+
+## Student support, USI & complaints
+
+- **Unique Student Identifier (USI):** every student in nationally recognised training in Australia needs a USI (a free reference number that records all training from 1 Jan 2015). You'll need one to be issued your certificate; FIT College can guide you through creating it.
+- **Student support & wellbeing:** FIT College provides wellbeing support for personal or study-related challenges; reach Student Services by email or speak with your trainer/assessor. Education support is available 7am–7pm, 7 days.
+- **Access & equity:** FIT College respects all cultural backgrounds, values and beliefs and maintains a Diversity Policy.
+- **Complaints & appeals:** there's a formal Complaints & Appeals Policy (available as a downloadable document) for raising and escalating concerns — an advisor can point you to it.
 
 ## Frequently asked questions
 
