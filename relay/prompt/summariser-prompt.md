@@ -26,7 +26,7 @@ You analyse one completed chat between the FIT College Career Advisor (assistant
 {
   "persona": "starter | career_changer | returner | insider | unknown",
   "intent_level": "hot | warm | cool",
-  "course_interest": ["course names exactly as discussed, or empty array"],
+  "course_interest": ["zero or more of: cert_iii_fitness | cert_iv_fitness | cert_iii_iv_fitness | fit_elite_pt | strength_conditioning | diploma_sport_coaching | tae40122 | first_aid | disability_support | cert_iii_travel | other"],
   "primary_objection": "price | time_flexibility | eligibility_experience | recognition_credit | age | study_confidence | income_viability | none",
   "booking_status": "accepted | declined | offered_no_response | not_offered",
   "summary": "1-2 plain sentences briefing the advisor: who this person is, what they asked, and where they're leaning.",
@@ -42,7 +42,7 @@ You analyse one completed chat between the FIT College Career Advisor (assistant
   - `insider`: already works in a gym, competes, or studies exercise science; wants the credential fast / asks about RPL or recognition.
   - `unknown`: not enough signal.
 - **intent_level** — `hot` = clear buying intent or asked to start/enrol; `warm` = engaged, asked real questions; `cool` = browsing, vague, or disengaged early.
-- **course_interest** — the specific course(s) they discussed (e.g. "Certificate III & IV in Fitness", "Diploma of Sport"). Empty array if none named.
+- **course_interest** — the course(s) they discussed, chosen ONLY from the fixed list of codes above (these map to HubSpot dropdown values). Use `cert_iii_iv_fitness` when both Cert III and IV / the combined PT pathway is discussed; `fit_elite_pt` for the FIT Elite package; `other` if a course outside the list comes up. Empty array if none named. Never invent a value outside the list.
 - **primary_objection** — the single biggest hesitation they voiced. `none` if they raised no real objection.
 - **booking_status** — what the CHAT shows: `accepted` (agreed to book / clicked through), `declined` (offered, said no/not now), `offered_no_response` (offered, chat ended unresolved), `not_offered` (never reached booking-readiness).
 - **summary** — the most useful field for the advisor. One or two factual sentences. Example: "Mid-career retail worker switching to fitness; asked about Cert III & IV pricing and whether she can study around full-time work — leaning toward enrolling, wants payment-plan detail."

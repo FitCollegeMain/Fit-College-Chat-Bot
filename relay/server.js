@@ -9,6 +9,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import 'dotenv/config';
+import { resolveContact, syncToHubSpot } from './hubspot.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -16,7 +17,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3000;
 const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || 'https://www.fitcollege.edu.au';
 const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
-const HUBSPOT_TOKEN = process.env.HUBSPOT_TOKEN;
 const ADMIN_TOKEN = process.env.ADMIN_RELOAD_TOKEN;
 const CHAT_MODEL = process.env.CHAT_MODEL || 'claude-haiku-4-5-20251001';
 const SUMMARY_MODEL = process.env.SUMMARY_MODEL || 'claude-haiku-4-5-20251001';
@@ -51,74 +51,9 @@ function buildSystemPrompt(firstName) {
     .replace('{{KNOWLEDGE_BASE}}', knowledgeBase);
 }
 
-// ---------- HubSpot (resolve + write-back) ----------
-// Both calls fail safe: if HubSpot is unconfigured or errors, the chat still works.
-// Endpoints to confirm against current HubSpot v3 docs before going live.
-async function resolveContact(utk) {
-  if (!utk || !HUBSPOT_TOKEN) return null;
-  try {
-    // Legacy endpoint, still supported with a private-app token; server-side only (no CORS).
-    const res = await fetch(
-      `https://api.hubapi.com/contacts/v1/contact/utk/${encodeURIComponent(utk)}/profile?property=firstname`,
-      { headers: { 'Authorization': `Bearer ${HUBSPOT_TOKEN}` } }
-    );
-    if (res.status === 404) return null;            // cookie not tied to a contact yet
-    if (!res.ok) throw new Error(`HubSpot ${res.status}`);
-    const data = await res.json();
-    if (data['is-contact'] === false) return null;
-    return {
-      contactId: String(data.vid),                  // vid is the same id v3 uses
-      firstName: (data.properties && data.properties.firstname && data.properties.firstname.value) || ''
-    };
-  } catch (e) {
-    console.error('Contact resolution failed:', e.message);
-    return null;
-  }
-}
-
-async function syncToHubSpot(contactId, f) {
-  if (!contactId || !HUBSPOT_TOKEN) return;
-  const headers = {
-    'Authorization': `Bearer ${HUBSPOT_TOKEN}`,
-    'Content-Type': 'application/json'
-  };
-  try {
-    // 1) Structured properties — for filtering, lists and automation.
-    await fetch(`https://api.hubapi.com/crm/v3/objects/contacts/${contactId}`, {
-      method: 'PATCH',
-      headers,
-      body: JSON.stringify({ properties: {
-        fitc_advisor_persona: f.persona,
-        fitc_intent_level: f.intent_level,
-        fitc_course_interest: (f.course_interest || []).join(';'),
-        fitc_primary_objection: f.primary_objection,
-        fitc_booking_status: f.booking_status,
-        fitc_kb_gaps: (f.kb_gaps || []).join('\n')
-      }})
-    });
-
-    // 2) Human-readable brief on the contact timeline for the advisor.
-    if (f.summary) {
-      await fetch('https://api.hubapi.com/crm/v3/objects/notes', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          properties: {
-            hs_timestamp: Date.now(),                // required: when the note occurred
-            hs_note_body: `FIT College Advisor chat\n\n${f.summary}`
-          },
-          associations: [{
-            to: { id: contactId },
-            // 202 = Note -> Contact (we POST from the note, so the note is the "from")
-            types: [{ associationCategory: 'HUBSPOT_DEFINED', associationTypeId: 202 }]
-          }]
-        })
-      });
-    }
-  } catch (e) {
-    console.error('HubSpot sync failed:', e.message);
-  }
-}
+// HubSpot resolve + write-back live in ./hubspot.js (shared with the one-off
+// scripts). Both calls fail safe: if HubSpot is unconfigured or errors, the
+// chat still works.
 
 // ---------- Anthropic call (with timeout) ----------
 async function callAnthropic({ model, system, messages, maxTokens }) {
@@ -164,6 +99,16 @@ app.use(cors({ origin: ALLOWED_ORIGIN, methods: ['POST'] }));
 const chatLimiter = rateLimit({ windowMs: 60_000, max: 30, standardHeaders: true, legacyHeaders: false });
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
+
+// GET /widget.js  -> serve the embeddable widget from the relay origin.
+// Loading it from the same origin as /chat keeps CORS simple for the page that
+// embeds it. widget.js lives at the repo root (one level up from this file).
+const WIDGET_PATH = path.join(__dirname, '..', 'widget.js');
+app.get('/widget.js', (_req, res) => {
+  res.type('application/javascript');
+  res.set('Cache-Control', 'public, max-age=300'); // 5 min; bump after edits
+  res.sendFile(WIDGET_PATH);
+});
 
 // POST /chat  { utk, messages:[{role, content}] }  ->  { reply, offerBooking }
 app.post('/chat', chatLimiter, async (req, res) => {
