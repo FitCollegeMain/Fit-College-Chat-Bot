@@ -1,0 +1,13 @@
+{
+  "name": "fitc-relay",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "FIT College Career Advisor chat relay — HubSpot setup utilities",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "hubspot:properties": "node hubspot-properties.js"
+  }
+}
