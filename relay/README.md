@@ -129,6 +129,9 @@ never drift from the summariser's enums.
 HUBSPOT_TOKEN=pat-xxxx npm run hubspot:properties
 ```
 
+The scripts also read `relay/.env`, so you can instead put `HUBSPOT_TOKEN=…`
+there and just run `npm run hubspot:properties`.
+
 Idempotent — re-running updates labels/options instead of duplicating. Creates
 a **FIT College Advisor** property group with:
 

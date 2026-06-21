@@ -15,6 +15,7 @@
 // Safe to run against a throwaway test contact: it writes the fitc_* properties
 // and adds one note clearly marked as a smoke test.
 
+import 'dotenv/config';
 import { resolveContact, syncToHubSpot, PROPERTY_DEFS } from '../hubspot.js';
 
 const API = 'https://api.hubapi.com';

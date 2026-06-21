@@ -16,6 +16,7 @@
 // Re-running is safe: existing group/properties are updated (label, options,
 // description), not duplicated. Existing options are never deleted by HubSpot.
 
+import 'dotenv/config';
 import { PROPERTY_GROUP, PROPERTY_DEFS } from '../hubspot.js';
 
 const API = 'https://api.hubapi.com';
