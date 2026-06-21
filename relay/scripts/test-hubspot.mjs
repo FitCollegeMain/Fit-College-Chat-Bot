@@ -4,8 +4,8 @@
 //
 // Requires a private-app token with scopes:
 //   crm.objects.contacts.read / .write
-//   crm.objects.notes.write    (the gotcha — notes/activities write)
-//   (resolveContact by utk also needs the legacy contacts read access)
+//   (the timeline note is an engagement and is authorised by contacts.write —
+//    there is no separate notes scope on most accounts)
 //
 // Usage — at minimum a contact id; utk is optional (tests name resolution):
 //   HUBSPOT_TOKEN=pat-xxxx TEST_CONTACT_ID=12345 \

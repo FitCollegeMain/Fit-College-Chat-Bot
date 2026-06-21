@@ -110,8 +110,10 @@ In HubSpot → Settings → Integrations → Private Apps, create an app and gra
 these scopes (the notes scope is easy to miss):
 
 - `crm.objects.contacts.read`
-- `crm.objects.contacts.write`
-- `crm.objects.notes.write` — **required for the timeline note**
+- `crm.objects.contacts.write` — also authorises creating/associating the
+  timeline **note** (notes are engagements; the Notes API uses the Contacts
+  scope). A separate `crm.objects.notes.write` scope is not exposed on many
+  accounts and is not required — add it only if your account shows it.
 - `crm.schemas.contacts.read`
 - `crm.schemas.contacts.write` — only needed to run the property-creation script
 
