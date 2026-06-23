@@ -221,7 +221,9 @@
   }
 
   // ---------- Demo mode ----------
-  var demoLines = [
+  // Optional: a page can supply its own canned replies via window.FITC_DEMO
+  // (array of strings) to preview real content. Falls back to generic lines.
+  var demoLines = (window.FITC_DEMO && window.FITC_DEMO.length) ? window.FITC_DEMO : [
     'Great question! Our Certificate III & IV in Fitness is the most popular path \u2014 it qualifies you to work as a personal trainer. Are you looking to start fresh, or are you already working in the industry?',
     'That makes sense. It\u2019s self-paced online for the theory, with practical sessions you can fit around your schedule. What\u2019s most important to you \u2014 cost, flexibility, or how quickly you can finish?'
   ];
@@ -229,7 +231,7 @@
     var i = Math.min(messages.filter(function (m) { return m.role === 'assistant'; }).length, demoLines.length - 1);
     setTimeout(function () {
       var userTurns = messages.filter(function (m) { return m.role === 'user'; }).length;
-      reply(demoLines[i], userTurns >= 2);
+      reply(demoLines[i], userTurns >= demoLines.length);  // offer booking after the last scripted reply
     }, 800);
   }
 

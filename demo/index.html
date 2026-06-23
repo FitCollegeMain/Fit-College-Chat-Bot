@@ -31,12 +31,16 @@
       <p>One of our career advisors will call you shortly to talk through courses,
          start dates and payment plans.</p>
       <p>In the meantime, our Career Advisor (bottom-right) can answer your
-         questions right now. Ask about the Certificate III &amp; IV in Fitness,
-         study modes, or getting started.</p>
-      <p class="note">Demo mode: replies are canned and no data is sent anywhere.
-         This shows the widget UX exactly as it appears on the live site.</p>
+         questions right now — this preview plays a short scripted conversation.</p>
+      <p class="note">Demo mode: replies are scripted from the knowledge base and
+         nothing is sent anywhere. The live widget answers dynamically via the relay.</p>
     </div>
   </div>
+
+  <!-- Scripted, KB-grounded canned replies for the demo. -->
+  <script>
+    window.FITC_DEMO = ["Great question, Sam! You've got up to 12 months, but most online students wrap it up in around 6 — and on campus full-time it's about 8 weeks. Are you leaning towards online, or a campus near you?","That's a really common switch, and it fits well around a full-time job — the online study is self-paced, so you work through it in the gaps and finish on your own timeline. Are you thinking gym instructor to start, or heading straight for personal training?","Nice goal! To train clients as a PT you'd do your Cert III then Cert IV — lots of people bundle both as our FIT Elite package, with interest-free payment plans (and there's an EOFY sale on right now). Exact pricing depends on your path and study mode, so the best next step is a quick chat with an advisor who can give you real numbers and a plan — want me to set that up?"];
+  </script>
 
   <!-- FIT College Career Advisor widget, inlined in demo mode -->
   <script data-demo="true"
@@ -266,7 +270,9 @@
   }
 
   // ---------- Demo mode ----------
-  var demoLines = [
+  // Optional: a page can supply its own canned replies via window.FITC_DEMO
+  // (array of strings) to preview real content. Falls back to generic lines.
+  var demoLines = (window.FITC_DEMO && window.FITC_DEMO.length) ? window.FITC_DEMO : [
     'Great question! Our Certificate III & IV in Fitness is the most popular path \u2014 it qualifies you to work as a personal trainer. Are you looking to start fresh, or are you already working in the industry?',
     'That makes sense. It\u2019s self-paced online for the theory, with practical sessions you can fit around your schedule. What\u2019s most important to you \u2014 cost, flexibility, or how quickly you can finish?'
   ];
@@ -274,7 +280,7 @@
     var i = Math.min(messages.filter(function (m) { return m.role === 'assistant'; }).length, demoLines.length - 1);
     setTimeout(function () {
       var userTurns = messages.filter(function (m) { return m.role === 'user'; }).length;
-      reply(demoLines[i], userTurns >= 2);
+      reply(demoLines[i], userTurns >= demoLines.length);  // offer booking after the last scripted reply
     }, 800);
   }
 
@@ -312,6 +318,26 @@
   if (cfg.autoOpen > 0) setTimeout(open, cfg.autoOpen);
 })();
 
+  </script>
+
+  <!-- Auto-play: type each prompt and send once the widget is idle. -->
+  <script>
+    (function () {
+      var prompts = ["How long does the Certificate III in Fitness take?","Online — I'm working full-time and want to switch careers.","I want to become a personal trainer eventually. What does it cost?"];
+      var i = 0;
+      function step() {
+        if (i >= prompts.length) return;
+        var input = document.getElementById('fitc-input');
+        var send = document.getElementById('fitc-send');
+        if (!input || !send || send.disabled) { setTimeout(step, 300); return; }
+        input.value = prompts[i];
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        send.click();
+        i++;
+        setTimeout(step, 1700);
+      }
+      setTimeout(step, 1500);  // let the panel auto-open and greet first
+    })();
   </script>
 </body>
 </html>
